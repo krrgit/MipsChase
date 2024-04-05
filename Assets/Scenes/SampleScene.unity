@@ -207,6 +207,11 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &722587657 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3072852383546661094, guid: e2ee0c231ba124841927c2b7ea5b8bd0, type: 3}
+  m_PrefabInstance: {fileID: 1679819528}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1679819528
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -233,6 +238,10 @@ PrefabInstance:
     - target: {fileID: -7584827978028588409, guid: e2ee0c231ba124841927c2b7ea5b8bd0, type: 3}
       propertyPath: m_fMagnitudeFast
       value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: -7584827978028588409, guid: e2ee0c231ba124841927c2b7ea5b8bd0, type: 3}
+      propertyPath: m_fFastRotateSpeed
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 2572352322406527498, guid: e2ee0c231ba124841927c2b7ea5b8bd0, type: 3}
       propertyPath: m_Name
@@ -395,6 +404,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Target
       objectReference: {fileID: 0}
+    - target: {fileID: 4597280884397473260, guid: 14486d0cabf232646b839a51f86300d5, type: 3}
+      propertyPath: player
+      value: 
+      objectReference: {fileID: 722587657}
     - target: {fileID: 4597280884397473260, guid: 14486d0cabf232646b839a51f86300d5, type: 3}
       propertyPath: fHopChance
       value: 0.005

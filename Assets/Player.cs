@@ -25,7 +25,10 @@ public class Player : MonoBehaviour
     public float m_fTargetAngle;
     public eState m_nState;
     public float m_fDiveStartTime;
-
+    // [SerializeField] allows variable to be seen in editor but remain private
+    [SerializeField] private bool fastRedirect; // FastMove Redirect condition check
+    [SerializeField] private float angleDelta; // Delta between m_fAngle & m_fTargetAngle 
+    
     public enum eState : int
     {
         kMoveSlow,
@@ -60,6 +63,9 @@ public class Player : MonoBehaviour
             m_vDiveStartPos = transform.position;
             m_vDiveEndPos = m_vDiveStartPos - (transform.right * m_fDiveDistance);
             m_fDiveStartTime = Time.time;
+            
+            // Start Dive Animation
+            StartCoroutine(IDive());
         }
     }
 
@@ -99,8 +105,122 @@ public class Player : MonoBehaviour
         }
     }
 
+    void Move()
+    {
+        // Exit if diving
+        if (m_nState == eState.kDiving || m_nState == eState.kRecovering) return;
+        
+        // Get acceleration direction towards target speed.
+        // If faster, slow down. If slower, speed up.
+        float dir = Mathf.Sign(m_fTargetSpeed - m_fSpeed); 
+        // If redirect, slow down.
+        dir = fastRedirect ? -1 : dir;
+        
+        // Increment m_fSpeed
+        m_fSpeed += m_fIncSpeed * dir;
+        // Clamp m_fSpeed
+        m_fSpeed = Mathf.Clamp(m_fSpeed, 0, m_fMaxSpeed);
+        
+        // Move
+        transform.position += m_fSpeed * -transform.right;
+        
+        // Set Move State to kMoveFast when at max speed
+        if (Mathf.Abs(m_fMaxSpeed - m_fSpeed) <= m_fIncSpeed && m_fSpeed > m_fSlowSpeed)
+        {
+            m_nState = eState.kMoveFast;
+        }
+    }
+
+    void Rotate()
+    {
+        // Exit if diving
+        if (m_nState == eState.kDiving || m_nState == eState.kRecovering) return;
+        
+        // Slow Move: Immediate Turnaround 
+        if (m_nState == eState.kMoveSlow)
+        {
+            m_fAngle = m_fTargetAngle;
+        }
+        else if (!fastRedirect)
+        {
+            // Fast Move: Slow Turn
+            float dir = Mathf.Sign(m_fTargetAngle - m_fAngle);
+            float delta = Mathf.Min(Mathf.Abs(m_fTargetAngle - m_fAngle), m_fFastRotateSpeed);
+            m_fAngle += delta * dir;
+        }
+        else
+        {
+            // Redirect: keep same face position (m_fAngle = m_fAngle)
+        }
+        
+        // Rotate
+        transform.localRotation = Quaternion.Euler(0,0,m_fAngle);
+    }
+
+    void FastRedirectCheck()
+    {
+        // Check if the angle between target and direction is greater than threshold
+        angleDelta = Mathf.Abs(m_fAngle - m_fTargetAngle);
+        fastRedirect = angleDelta >= m_fFastRotateMax;
+        
+        // Exit if not in Move Fast
+        if (m_nState != eState.kMoveFast) return;
+        
+        // Redirect
+        if (fastRedirect)
+        {
+            // Update target speed.
+            m_fTargetSpeed = m_fSlowSpeed;
+            
+            // Transition to Move Slow when speed is under slow threshold.
+            if (m_fSpeed <= m_fSlowSpeed)
+            {
+                m_nState = eState.kMoveSlow;
+            }
+        }
+    }
+
+    void Update()
+    {
+        // Inputs are ideally checked in Update
+        // In FixedUpdate inputs can sometimes get "eaten"
+        CheckForDive(); 
+    }
+
     void FixedUpdate()
     {
+        UpdateDirectionAndSpeed();
+        FastRedirectCheck();
+        Rotate();
+        Move();
+        
         GetComponent<Renderer>().material.color = stateColors[(int)m_nState];
+    }
+    
+    // Runs separate from Update/FixedUpdate calls.
+    IEnumerator IDive()
+    {
+        // Start Dive 
+        m_nState = eState.kDiving;
+        float diveTimer = m_fDiveTime;
+        
+        // Compute speed (in units per second) based on dist/time.
+        float speed = m_fDiveDistance / diveTimer; 
+        
+        // Animate player while timer counts down every frame.
+        while (diveTimer > 0)
+        {
+            // Move player by (speed * Time between frames (~1/60) * facing direction) every frame
+            transform.position += speed * Time.deltaTime * -transform.right;
+            diveTimer -= Time.deltaTime;
+            yield return new WaitForEndOfFrame();
+        }
+        
+        // Wait out recovery time.
+        m_nState = eState.kRecovering;
+        yield return new WaitForSeconds(m_fDiveRecoveryTime);
+        
+        // Return to idle.
+        m_nState = eState.kMoveSlow;
     }
 }
