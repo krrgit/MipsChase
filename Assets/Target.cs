@@ -61,6 +61,10 @@ public class Target : MonoBehaviour
         {
             AnimateHop();
         }
+        else
+        {
+            // Caught
+        }
     }
 
     void InitHop()
@@ -73,14 +77,18 @@ public class Target : MonoBehaviour
     {
         int attemptCounter = 0;
         m_vHopStartPos = transform.position;
+        // Direction away from player.
         Vector3 awayDir = (transform.position - m_player.transform.position).normalized;
+        // Away dir with RNG.
         Vector3 dir = (new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0) + awayDir).normalized;
+        // Update End Position.
         m_vHopEndPos = m_vHopStartPos + (m_fHopTime * m_fHopSpeed * dir);
         
         // Find position within screen bounds.
         while (Mathf.Abs(m_vHopEndPos.x) >= m_screenBounds.x || Mathf.Abs(m_vHopEndPos.y) >= m_screenBounds.y)
         {
-            dir =  (new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0) + awayDir).normalized;
+            //Retry RNG direction
+            dir = (new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0) + awayDir).normalized;
             m_vHopEndPos = m_vHopStartPos + (m_fHopTime * m_fHopSpeed * dir);
             attemptCounter++;
 
@@ -94,11 +102,20 @@ public class Target : MonoBehaviour
         // Max Attempts: Set direction towards player but to the side.
         if (attemptCounter >= m_nMaxMoveAttempts)
         {
-            dir = ((Random.Range(0,2) == 0 ? 1 : -1) * Random.Range(0.75f,1f) * Vector3.Cross(-awayDir, -Vector3.forward)) - awayDir;
+            // Vector perpendicular to the vector towards the player.
+            Vector3 sidewaysVec = Vector3.Cross(-awayDir, -Vector3.forward);
+            // RNG +/- , RNG magnitude between 0.75 & 1.0
+            Vector3 rngDir = (Random.Range(0, 2) == 0 ? 1 : -1) * Random.Range(0.75f, 1f) * sidewaysVec;
+            dir = rngDir - awayDir;
+            
+            // Update End Position.
             m_vHopEndPos = m_vHopStartPos + dir;
         }
         
-        // Reset State
+        // Face towards direction
+        transform.up = dir;
+        
+        // Set next state
         m_nState = eState.kHop;
     }
 
